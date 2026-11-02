@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Reproduzindo Episódio - Animebom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background-color: #0b0b0e; color: #f5f5f7; min-height: 100vh; display: flex; flex-direction: column; transition: background-color 0.3s; }
+    body.theater-mode { background-color: #000000; }
+    
+    header { background-color: #141419; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; }
+    .brand { font-size: 1.4rem; font-weight: 800; color: #ff6b00; text-decoration: none; }
+    .brand span { color: #ffffff; }
+    .back-btn { background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: background 0.2s; }
+    .back-btn:hover { background: #ff6b00; border-color: #ff6b00; }
+
+    main { flex: 1; max-width: 1100px; width: 100%; margin: 20px auto; padding: 0 4%; display: flex; flex-direction: column; gap: 16px; }
+    
+    .player-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .anime-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; border-left: 4px solid #ff6b00; padding-left: 10px; }
+    
+    .action-btn { background: #18181f; border: 1px solid rgba(255, 255, 255, 0.1); color: #b5b5c3; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .action-btn:hover, .action-btn.active { background: #ff6b00; color: #fff; border-color: #ff6b00; }
+
+    .video-viewport { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; }
+    .video-viewport iframe { width: 100%; height: 100%; border: none; }
+    .loading-spinner { color: #ff6b00; font-size: 0.95rem; font-weight: 600; }
+
+    .episode-nav-bar {
+      background: #141419;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .nav-ep-btn {
+      background: #1e1e26;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .nav-ep-btn:hover {
+      background: #ff6b00;
+      border-color: #ff6b00;
+    }
+
+    .nav-ep-btn.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .controls-panel { background: #141419; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+    .server-selector { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .server-selector span { font-size: 0.85rem; color: #888; font-weight: 600; }
+    .server-btn { background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.08); color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .server-btn.active { background: #ff6b00; border-color: #ff6b00; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html" class="brand">Anime<span>bom</span></a>
+    <a href="index.html" id="backBtn" class="back-btn">← Voltar</a>
+  </header>
+
+  <main>
+    <div class="player-header">
+      <div class="anime-title" id="playerTitle">Carregando...</div>
+      <button class="action-btn" id="theaterBtn">💡 Modo Cinema</button>
+    </div>
+
+    <div class="video-viewport" id="videoViewport">
+      <div class="loading-spinner" id="playerStatus">Carregando reprodutor seguro...</div>
+    </div>
+
+    <div class="episode-nav-bar">
+      <a href="#" id="prevEpBtn" class="nav-ep-btn disabled">❮ Episódio Anterior</a>
+      <a href="#" id="allEpsBtn" class="nav-ep-btn" style="background: #2a2a36;">Todos os Episódios</a>
+      <a href="#" id="nextEpBtn" class="nav-ep-btn disabled">Próximo Episódio ❯</a>
+    </div>
+
+    <div class="controls-panel">
+      <div class="server-selector" id="serverSelector">
+        <span>Opções de Servidor:</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const params = new URLSearchParams(window.location.search);
+      const episodeUrl = params.get("url");
+      const title = params.get("title") || "Episódio";
+      let animeId = params.get("anime_id");
+      const animeNameParam = params.get("anime_name");
+      const indexParam = params.get("index");
+
+      const playerTitle = document.getElementById("playerTitle");
+      const videoViewport = document.getElementById("videoViewport");
+      const playerStatus = document.getElementById("playerStatus");
+      const backBtn = document.getElementById("backBtn");
+      const theaterBtn = document.getElementById("theaterBtn");
+      const serverSelector = document.getElementById("serverSelector");
+      
+      const prevEpBtn = document.getElementById("prevEpBtn");
+      const nextEpBtn = document.getElementById("nextEpBtn");
+      const allEpsBtn = document.getElementById("allEpsBtn");
+
+      playerTitle.textContent = decodeURIComponent(title);
+      theaterBtn.addEventListener("click", () => {
+        document.body.classList.toggle("theater-mode");
+        theaterBtn.classList.toggle("active");
+        theaterBtn.textContent = document.body.classList.contains("theater-mode") ? "☀️ Apagar Luzes" : "💡 Modo Cinema";
+      });
+
+      const termoBusca = animeNameParam ? decodeURIComponent(animeNameParam) : decodeURIComponent(title).replace(/ep(is[oó]dio)?\s*\d+/i, "").trim();
+
+      if (!animeId && termoBusca) {
+        try {
+          const resAni = await fetch("https://graphql.anilist.co", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+              query: `query ($search: String) { Media(search: $search, type: ANIME) { id } }`,
+              variables: { search: termoBusca }
+            })
+          });
+          const jsonAni = await resAni.json();
+          if (jsonAni?.data?.Media?.id) {
+            animeId = jsonAni.data.Media.id;
+          }
+        } catch (e) {}
+      }
+
+      if (animeId) {
+        backBtn.href = `details.html?id=${animeId}&title=${encodeURIComponent(termoBusca)}`;
+        allEpsBtn.href = `details.html?id=${animeId}&title=${encodeURIComponent(termoBusca)}`;
+        allEpsBtn.textContent = "Todos os Episódios";
+      } else {
+        backBtn.href = "index.html";
+        allEpsBtn.href = "index.html";
+        allEpsBtn.textContent = "Voltar ao Início";
+      }
+
+      // Configuração inteligente dos botões de Próximo e Anterior
+      try {
+        const res = await fetch(`http://localhost:3000/api/episodes?anime=${encodeURIComponent(termoBusca)}`);
+        const json = await res.json();
+        const eps = json.data || [];
+
+        let indexAtual = -1;
+        if (indexParam !== null) {
+          indexAtual = parseInt(indexParam, 10);
+        } else {
+          indexAtual = eps.findIndex(e => e.episode_url === episodeUrl);
+        }
+
+        if (indexAtual !== -1 && eps.length > 0) {
+          // Ativa botão anterior se não for o primeiro
+          if (indexAtual > 0) {
+            const epPrev = eps[indexAtual - 1];
+            prevEpBtn.href = `player.html?url=${encodeURIComponent(epPrev.episode_url)}&title=${encodeURIComponent(epPrev.title)}&anime_id=${animeId || ''}&anime_name=${encodeURIComponent(termoBusca)}&index=${indexAtual - 1}`;
+            prevEpBtn.classList.remove("disabled");
+          }
+
+          // Ativa botão próximo SOMENTE se houver um episódio seguinte na lista
+          if (indexAtual < eps.length - 1) {
+            const epNext = eps[indexAtual + 1];
+            nextEpBtn.href = `player.html?url=${encodeURIComponent(epNext.episode_url)}&title=${encodeURIComponent(epNext.title)}&anime_id=${animeId || ''}&anime_name=${encodeURIComponent(termoBusca)}&index=${indexAtual + 1}`;
+            nextEpBtn.classList.remove("disabled");
+          } else {
+            // Se for o último episódio lançado da semana, garante que o botão próximo fica desativado
+            nextEpBtn.classList.add("disabled");
+          }
+        }
+      } catch (e) {}
+
+      async function carregarPlayer(url) {
+        if (!url) {
+          playerStatus.innerHTML = '<span style="color:#e50914;">URL do episódio ausente.</span>';
+          return;
+        }
+
+        try {
+          const res = await fetch(`http://localhost:3000/api/player?url=${encodeURIComponent(url)}`);
+          const data = await res.json();
+          const servers = data.servers || [];
+
+          if (servers.length === 0) {
+            playerStatus.innerHTML = '<span style="color:#e50914;">Nenhum servidor de vídeo localizado para este episódio.</span>';
+            return;
+          }
+
+          serverSelector.innerHTML = `<span>Opções de Servidor:</span>` + servers.map((s, idx) => `
+            <button class="server-btn ${idx === 0 ? 'active' : ''}" data-url="${s.embed_url}">${s.name || `Opção ${idx + 1}`}</button>
+          `).join("");
+
+          function tocar(embedUrl) {
+            videoViewport.innerHTML = `
+              <iframe 
+                src="${embedUrl}" 
+                frameborder="0" 
+                allowfullscreen 
+                allow="autoplay; encrypted-media; picture-in-picture"
+                style="width:100%; height:100%; border:none;">
+              </iframe>
+            `;
+          }
+
+          tocar(servers[0].embed_url);
+
+          document.querySelectorAll(".server-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              document.querySelectorAll(".server-btn").forEach(b => b.classList.remove("active"));
+              btn.classList.add("active");
+              tocar(btn.dataset.url);
+            });
+          });
+
+        } catch (err) {
+          playerStatus.innerHTML = '<span style="color:#e50914;">Erro ao conectar com o serviço de vídeo.</span>';
+        }
+      }
+
+      carregarPlayer(episodeUrl);
+    });
+  </script>
+</body>
+</html>

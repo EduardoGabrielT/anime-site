@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhes do Anime - Animebom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background-color: #0e0e11; color: #f5f5f7; min-height: 100vh; display: flex; flex-direction: column; }
+    header { background-color: #141419; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; }
+    .brand { font-size: 1.6rem; font-weight: 800; color: #ff6b00; text-decoration: none; }
+    .brand span { color: #ffffff; }
+    .back-link { background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+    .back-link:hover { background: #ff6b00; border-color: #ff6b00; }
+    main { flex: 1; max-width: 1280px; margin: 0 auto; width: 100%; padding: 24px 4%; display: grid; grid-template-columns: 1fr 310px; gap: 28px; }
+    .content-area { display: flex; flex-direction: column; gap: 24px; }
+    
+    .anime-hero { background: #141419; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 24px; display: flex; gap: 24px; }
+    .hero-poster { width: 180px; height: 255px; border-radius: 8px; object-fit: cover; background: #1e1e26; }
+    .hero-details { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .hero-title { font-size: 1.5rem; font-weight: 700; }
+    .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hero-badge { background: #1e1e26; color: #ffb300; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+    .hero-synopsis { font-size: 0.88rem; color: #b5b5c3; line-height: 1.6; margin-top: 6px; }
+
+    .episodes-section { background: #141419; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 20px; }
+    .section-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; border-left: 4px solid #ff6b00; padding-left: 8px; }
+
+    .seasons-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .season-btn { background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.08); color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .season-btn.active { background: #ff6b00; border-color: #ff6b00; }
+
+    .episodes-list { display: flex; flex-direction: column; gap: 8px; }
+    .ep-row { background: #18181f; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px 16px; text-decoration: none; color: #fff; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+    .ep-row:hover { background: #23232c; border-color: #ff6b00; transform: translateX(4px); }
+    .ep-info { display: flex; align-items: center; gap: 12px; }
+    .ep-number-tag { background: #2a2a36; color: #ff6b00; font-weight: 700; font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; }
+    .ep-row span.play-btn { color: #ff6b00; font-weight: 600; font-size: 0.85rem; }
+
+    .sidebar { display: flex; flex-direction: column; gap: 20px; }
+    .sidebar-card { background: #141419; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 18px; }
+
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .anime-hero { flex-direction: column; align-items: center; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html" class="brand">Anime<span>bom</span></a>
+    <a href="index.html" class="back-link">← Catálogo</a>
+  </header>
+
+  <main>
+    <div class="content-area">
+      <div class="anime-hero">
+        <img id="animePoster" class="hero-poster" src="https://placehold.co/180x255/18181f/ff6b00?text=Anime" alt="Poster">
+        <div class="hero-details">
+          <div class="hero-title" id="animeTitle">Carregando anime...</div>
+          <div class="hero-badges">
+            <span class="hero-badge" id="animeScore">★ --</span>
+            <span class="hero-badge" id="animeEps">-- Eps</span>
+            <span class="hero-badge" id="animeYear">----</span>
+          </div>
+          <p class="hero-synopsis" id="animeSynopsis">Buscando sinopse e detalhes...</p>
+        </div>
+      </div>
+
+      <section class="episodes-section">
+        <div class="section-title">Temporadas e Episódios</div>
+        <div class="seasons-bar" id="seasonsBar" style="display: none;"></div>
+        <div class="episodes-list" id="episodesList">
+          <div style="color: #ff6b00; text-align: center; padding: 20px;">Carregando lista de episódios...</div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <div class="section-title">Populares</div>
+        <div id="popularList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      const titleParam = params.get("title");
+
+      const animePoster = document.getElementById("animePoster");
+      const animeTitle = document.getElementById("animeTitle");
+      const animeScore = document.getElementById("animeScore");
+      const animeEps = document.getElementById("animeEps");
+      const animeYear = document.getElementById("animeYear");
+      const animeSynopsis = document.getElementById("animeSynopsis");
+      const seasonsBar = document.getElementById("seasonsBar");
+      const episodesList = document.getElementById("episodesList");
+
+      let nomeParaBusca = titleParam ? decodeURIComponent(titleParam) : "";
+      if (nomeParaBusca) animeTitle.textContent = nomeParaBusca;
+
+      if (id) {
+        fetch(`http://localhost:3000/anime/${id}`)
+          .then(res => res.json())
+          .then(json => {
+            const anime = json.data;
+            if (anime) {
+              if (!nomeParaBusca) {
+                nomeParaBusca = anime.title;
+                animeTitle.textContent = nomeParaBusca;
+                carregarEpisodios(nomeParaBusca);
+              }
+              animePoster.src = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url;
+              animeScore.textContent = `★ ${anime.score || '8.5'}`;
+              animeEps.textContent = `${anime.episodes || '--'} Eps`;
+              animeYear.textContent = anime.year || 'TV';
+              animeSynopsis.textContent = anime.synopsis || "Sinopse não disponível.";
+            }
+          })
+          .catch(() => {});
+      }
+
+      if (nomeParaBusca) {
+        carregarEpisodios(nomeParaBusca);
+      }
+
+      async function carregarEpisodios(termo) {
+        try {
+          const res = await fetch(`http://localhost:3000/api/episodes?anime=${encodeURIComponent(termo)}`);
+          const json = await res.json();
+          const eps = json.data || [];
+
+          if (eps.length === 0) {
+            episodesList.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">Nenhum episódio localizado.</div>';
+            return;
+          }
+
+          const temporadas = {};
+          eps.forEach(ep => {
+            const season = ep.season || 1;
+            if (!temporadas[season]) temporadas[season] = [];
+            temporadas[season].push(ep);
+          });
+
+          const seasonsKeys = Object.keys(temporadas).sort((a, b) => Number(a) - Number(b));
+
+          function renderizarLista(seasonKey) {
+            const lista = temporadas[seasonKey] || [];
+            episodesList.innerHTML = lista.map((ep, index) => {
+              const url = encodeURIComponent(ep.episode_url);
+              const tit = encodeURIComponent(ep.title);
+              const animeNomeEnc = encodeURIComponent(termo);
+              return `
+                <a href="player.html?url=${url}&title=${tit}&anime_id=${id || ''}&anime_name=${animeNomeEnc}&index=${index}&season=${seasonKey}" class="ep-row">
+                  <div class="ep-info">
+                    <span class="ep-number-tag">EP ${ep.number}</span>
+                    <span>${ep.title}</span>
+                  </div>
+                  <span class="play-btn">Assistir ▶</span>
+                </a>
+              `;
+            }).join("");
+          }
+
+          if (seasonsKeys.length > 1) {
+            seasonsBar.style.display = "flex";
+            seasonsBar.innerHTML = seasonsKeys.map((s, idx) => `
+              <button class="season-btn ${idx === 0 ? 'active' : ''}" data-season="${s}">Temporada ${s}</button>
+            `).join("");
+
+            document.querySelectorAll(".season-btn").forEach(btn => {
+              btn.addEventListener("click", () => {
+                document.querySelectorAll(".season-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                renderizarLista(btn.dataset.season);
+              });
+            });
+          } else {
+            seasonsBar.style.display = "none";
+          }
+
+          renderizarLista(seasonsKeys[0]);
+
+        } catch (err) {
+          episodesList.innerHTML = '<div style="color: #e50914; text-align: center; padding: 20px;">Erro ao carregar episódios.</div>';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

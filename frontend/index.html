@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animebom - Assistir Animes Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background-color: #0e0e11; color: #f5f5f7; min-height: 100vh; display: flex; flex-direction: column; }
+    header { background-color: #141419; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 32px; }
+    .brand { font-size: 1.6rem; font-weight: 800; color: #ff6b00; text-decoration: none; }
+    .brand span { color: #ffffff; }
+    .main-nav { display: flex; align-items: center; gap: 20px; }
+    .nav-link { color: #b5b5c3; text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: color 0.2s; }
+    .nav-link:hover, .nav-link.active { color: #ff6b00; }
+    .search-box { display: flex; align-items: center; background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 6px 14px; width: 100%; max-width: 280px; }
+    .search-box input { background: transparent; border: none; outline: none; color: #fff; font-size: 0.85rem; width: 100%; }
+    .search-box input::placeholder { color: #777; }
+    main { flex: 1; max-width: 1380px; margin: 0 auto; width: 100%; padding: 24px 4%; display: grid; grid-template-columns: 1fr 310px; gap: 28px; }
+    .content-area { display: flex; flex-direction: column; gap: 28px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px; }
+    .section-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; border-left: 4px solid #ff6b00; padding-left: 10px; }
+    .anime-count { font-size: 0.85rem; color: #888; }
+    .releases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+    .release-card { background: #141419; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; display: flex; flex-direction: column; cursor: pointer; }
+    .release-card:hover { transform: translateY(-3px); border-color: #ff6b00; }
+    .release-thumb-wrapper { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; overflow: hidden; }
+    .release-thumb { width: 100%; height: 100%; object-fit: cover; }
+    .release-badge { position: absolute; bottom: 6px; right: 6px; background: #e50914; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+    .release-title { padding: 8px 10px; font-size: 0.78rem; font-weight: 600; color: #f5f5f7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .alphabet-filter-wrapper { width: 100%; }
+    .alphabet-bar { display: flex; flex-wrap: wrap; gap: 5px; background: #141419; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); align-items: center; justify-content: center; }
+    .letter-btn { background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.05); color: #a0a0b2; font-size: 0.8rem; font-weight: 700; padding: 5px 10px; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; min-width: 30px; text-align: center; }
+    .letter-btn:hover { background: #2a2a36; color: #ffffff; border-color: #ff6b00; }
+    .letter-btn.active { background: #ff6b00; color: #ffffff; border-color: #ff6b00; }
+    .anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+    .anime-card { background: #18181f; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; }
+    .anime-card:hover { transform: translateY(-4px); border-color: #ff6b00; }
+    .card-thumb-wrapper { position: relative; width: 100%; height: 220px; background: #121217; overflow: hidden; }
+    .card-thumb { width: 100%; height: 100%; object-fit: cover; }
+    .card-badge { position: absolute; top: 6px; right: 6px; background: rgba(0, 0, 0, 0.75); color: #ffb300; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+    .card-info { padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+    .card-title { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { font-size: 0.72rem; color: #888; display: flex; justify-content: space-between; }
+    .sidebar { display: flex; flex-direction: column; gap: 20px; }
+    .sidebar-card { background: #141419; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 18px; }
+    .sidebar-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 14px; border-left: 4px solid #ff6b00; padding-left: 8px; }
+    .popular-list { display: flex; flex-direction: column; gap: 12px; }
+    .popular-item { display: flex; gap: 10px; text-decoration: none; color: inherit; align-items: center; padding: 6px; border-radius: 8px; transition: background 0.2s; }
+    .popular-item:hover { background: #1e1e26; }
+    .popular-thumb { width: 48px; height: 65px; border-radius: 6px; object-fit: cover; background: #23232c; }
+    .popular-info { display: flex; flex-direction: column; gap: 3px; }
+    .popular-name { font-size: 0.82rem; font-weight: 600; line-height: 1.3; }
+    .popular-score { font-size: 0.75rem; color: #ffb300; font-weight: 600; }
+    @media (max-width: 1024px) { main { grid-template-columns: 1fr; } .sidebar { display: none; } }
+    @media (max-width: 768px) { .main-nav { display: none; } .releases-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <a href="index.html" class="brand">Anime<span>bom</span></a>
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link active">Início</a>
+        <a href="#catalogoTitle" class="nav-link">Lista de Animes</a>
+        <a href="#releasesSection" class="nav-link">Episódios</a>
+      </nav>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Pesquisar anime...">
+    </div>
+  </header>
+
+  <main>
+    <div class="content-area">
+      <section id="releasesSection">
+        <div class="section-header">
+          <div class="section-title">Últimos Lançamentos</div>
+        </div>
+        <div class="releases-grid" id="releasesGrid" style="margin-top: 14px;">
+          <div style="grid-column: 1 / -1; padding: 20px; color: #ff6b00; text-align: center;">Carregando episódios recentes...</div>
+        </div>
+      </section>
+
+      <div class="alphabet-filter-wrapper">
+        <div class="alphabet-bar" id="alphabetBar">
+          <button class="letter-btn active" data-letter="all">Todos</button>
+          <button class="letter-btn" data-letter="0-9">#</button>
+        </div>
+      </div>
+
+      <section>
+        <div class="section-header">
+          <div class="section-title" id="catalogoTitle">Catálogo de Animes</div>
+          <div class="anime-count" id="animeCount"></div>
+        </div>
+        <div class="anime-grid" id="animeGrid" style="margin-top: 14px;">
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ff6b00;">Carregando catálogo...</div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-title">Populares</div>
+        <div id="popularList" class="popular-list"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const releasesGrid = document.getElementById("releasesGrid");
+      const animeGrid = document.getElementById("animeGrid");
+      const alphabetBar = document.getElementById("alphabetBar");
+      const searchInput = document.getElementById("searchInput");
+      const catalogoTitle = document.getElementById("catalogoTitle");
+      const animeCount = document.getElementById("animeCount");
+      const popularList = document.getElementById("popularList");
+
+      window.catalogoPrincipal = [];
+      const cacheLetras = {};
+
+      gerarBotoesAlfabeto();
+      carregarLancamentosRecentes();
+      carregarAnimesPopulares();
+
+      if (searchInput) {
+        searchInput.addEventListener("input", async (e) => {
+          const termo = e.target.value.toLowerCase().trim();
+          document.querySelectorAll(".letter-btn").forEach(b => b.classList.remove("active"));
+          
+          if (!termo) {
+            document.querySelector('.letter-btn[data-letter="all"]')?.classList.add("active");
+            renderizarAnimes(window.catalogoPrincipal, "Catálogo de Animes");
+            return;
+          }
+
+          let encontrados = window.catalogoPrincipal.filter(a => {
+            const titulo = (a.title?.romaji || a.title?.english || (typeof a.title === "string" ? a.title : "")).toLowerCase();
+            return titulo.includes(termo);
+          });
+
+          if (encontrados.length < 3 && termo.length >= 2) {
+            const online = await buscarAnilistOnline(termo);
+            if (online.length > 0) {
+              const mapa = new Map();
+              [...encontrados, ...online].forEach(item => mapa.set(item.id, item));
+              encontrados = Array.from(mapa.values());
+            }
+          }
+
+          renderizarAnimes(encontrados, `Resultados para: "${termo}"`);
+        });
+      }
+
+      async function carregarLancamentosRecentes() {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+          const res = await fetch("http://localhost:3000/api/latest-releases", { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          const resJson = await res.json();
+          const episodes = resJson.data || resJson;
+
+          if (!Array.isArray(episodes) || episodes.length === 0) {
+            releasesGrid.innerHTML = '<span style="color: #666; font-size: 0.85rem; grid-column: 1 / -1; text-align: center; padding: 14px;">Nenhum lançamento recente encontrado.</span>';
+            return;
+          }
+
+          releasesGrid.innerHTML = episodes.slice(0, 12).map(ep => {
+            const targetUrl = ep.episode_url || ep.url || "";
+            const thumbImg = ep.image || "https://placehold.co/320x180/18181f/ff6b00?text=Episodio";
+            const tituloEp = ep.title || "";
+            const matchEp = tituloEp.match(/(?:ep[is[oó]dio]?\s*(\d+))/i);
+            const numeroEp = matchEp ? parseInt(matchEp[1], 10) : 1;
+            const nomeAnime = tituloEp.replace(/ep(is[oó]dio)?\s*\d+/i, "").replace(/-.*$/, "").trim();
+
+            return `
+              <div class="release-card" onclick="window.location.href='player.html?url=${encodeURIComponent(targetUrl)}&title=${encodeURIComponent(tituloEp)}&anime_name=${encodeURIComponent(nomeAnime)}&index=${numeroEp - 1}'">
+                <div class="release-thumb-wrapper">
+                  <img class="release-thumb" src="${thumbImg}" alt="${tituloEp}" loading="lazy" onerror="this.src='https://placehold.co/320x180/18181f/ff6b00?text=Episodio'">
+                  <span class="release-badge">${ep.lang || 'Legendado'}</span>
+                </div>
+                <div class="release-title" title="${tituloEp}">${tituloEp}</div>
+              </div>
+            `;
+          }).join("");
+        } catch (e) {
+          releasesGrid.innerHTML = '<span style="color: #666; font-size: 0.85rem; grid-column: 1 / -1; text-align: center; padding: 14px;">Serviço de lançamentos indisponível.</span>';
+        }
+      }
+
+      function carregarSidebarPopulares() {
+        const topPopulares = window.catalogoPrincipal.slice(0, 6);
+        if (popularList && topPopulares.length > 0) {
+          popularList.innerHTML = topPopulares.map(a => {
+            const id = a.id || a.idMal;
+            const titulo = a.title?.romaji || a.title?.english || (typeof a.title === "string" ? a.title : "Anime");
+            const poster = a.coverImage?.large || "";
+            const score = a.averageScore ? (a.averageScore / 10).toFixed(1) : "8.5";
+
+            return `
+              <a href="details.html?id=${id}&title=${encodeURIComponent(titulo)}" class="popular-item">
+                <img class="popular-thumb" src="${poster}" alt="${titulo}">
+                <div class="popular-info">
+                  <span class="popular-name">${titulo.slice(0, 20)}...</span>
+                  <span class="popular-score">★ ${score}</span>
+                </div>
+              </a>
+            `;
+          }).join("");
+        }
+      }
+
+      function gerarBotoesAlfabeto() {
+        const letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+        letras.forEach(letra => {
+          const btn = document.createElement("button");
+          btn.className = "letter-btn";
+          btn.dataset.letter = letra;
+          btn.textContent = letra;
+          alphabetBar.appendChild(btn);
+        });
+
+        document.querySelectorAll(".letter-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".letter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            if (searchInput) searchInput.value = "";
+            selecionarLetra(btn.dataset.letter);
+          });
+        });
+      }
+
+      async function carregarAnimesPopulares() {
+        try {
+          const animes = await queryAniList(`
+            query {
+              Page(page: 1, perPage: 50) {
+                media(type: ANIME, sort: POPULARITY_DESC) {
+                  id
+                  idMal
+                  title { romaji english }
+                  coverImage { large }
+                  averageScore
+                  episodes
+                  format
+                }
+              }
+            }
+          `);
+
+          if (Array.isArray(animes) && animes.length > 0) {
+            window.catalogoPrincipal = animes;
+            renderizarAnimes(animes, "Catálogo de Animes");
+            carregarSidebarPopulares();
+          } else {
+            animeGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #888;">Catálogo indisponível.</div>';
+          }
+        } catch (err) {
+          animeGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #888;">Falha ao carregar animes.</div>';
+        }
+      }
+
+      async function selecionarLetra(letra) {
+        if (letra === "all") {
+          renderizarAnimes(window.catalogoPrincipal, "Catálogo de Animes");
+          return;
+        }
+
+        if (cacheLetras[letra]) {
+          renderizarAnimes(cacheLetras[letra], `Animes com a letra "${letra}"`);
+          return;
+        }
+
+        animeGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ff6b00;">Buscando animes com a letra ${letra}...</div>`;
+
+        const termoBusca = letra === "0-9" ? "1" : letra;
+        const animesLetra = await queryAniList(`
+          query {
+            Page(page: 1, perPage: 40) {
+              media(type: ANIME, search: "${termoBusca}", sort: POPULARITY_DESC) {
+                id
+                idMal
+                title { romaji english }
+                coverImage { large }
+                averageScore
+                episodes
+                format
+              }
+            }
+          }
+        `);
+
+        const filtrados = animesLetra.filter(a => {
+          const t = (a.title?.romaji || a.title?.english || "").trim().toUpperCase();
+          if (letra === "0-9") return /^[0-9]/.test(t);
+          return t.startsWith(letra.toUpperCase());
+        });
+
+        const listaFinal = filtrados.length > 0 ? filtrados : animesLetra;
+        cacheLetras[letra] = listaFinal;
+        renderizarAnimes(listaFinal, `Animes com a letra "${letra}"`);
+      }
+
+      async function queryAniList(queryGql) {
+        try {
+          const res = await fetch("https://graphql.anilist.co", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ query: queryGql })
+          });
+          const json = await res.json();
+          return json?.data?.Page?.media || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      async function buscarAnilistOnline(termo) {
+        return queryAniList(`
+          query {
+            Page(page: 1, perPage: 20) {
+              media(type: ANIME, search: "${termo}", sort: POPULARITY_DESC) {
+                id
+                idMal
+                title { romaji english }
+                coverImage { large }
+                averageScore
+                episodes
+                format
+              }
+            }
+          }
+        `);
+      }
+
+      function renderizarAnimes(lista, tituloPersonalizado) {
+        if (tituloPersonalizado) catalogoTitle.textContent = tituloPersonalizado;
+        if (animeCount) animeCount.textContent = `${lista.length} animes encontrados`;
+
+        if (!lista || lista.length === 0) {
+          animeGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 48px 16px; color: #888;">Nenhum anime encontrado.</div>';
+          return;
+        }
+
+        animeGrid.innerHTML = lista.map(a => {
+          const id = a.id || a.idMal;
+          const titulo = a.title?.romaji || a.title?.english || (typeof a.title === "string" ? a.title : "Anime");
+          const poster = a.coverImage?.large || "https://placehold.co/240x340/18181f/ff6b00?text=Anime";
+          const score = a.averageScore ? (a.averageScore / 10).toFixed(1) : "8.5";
+          const eps = a.episodes ? `${a.episodes} eps` : (a.format || "TV");
+
+          return `
+            <a href="details.html?id=${id}&title=${encodeURIComponent(titulo)}" class="anime-card">
+              <div class="card-thumb-wrapper">
+                <img class="card-thumb" src="${poster}" alt="${titulo}" loading="lazy">
+                <span class="card-badge">★ ${score}</span>
+              </div>
+              <div class="card-info">
+                <span class="card-title" title="${titulo}">${titulo}</span>
+                <div class="card-meta">
+                  <span>${eps}</span>
+                  <span>Assistir ▶</span>
+                </div>
+              </div>
+            </a>
+          `;
+        }).join("");
+      }
+    });
+  </script>
+</body>
+</html>
