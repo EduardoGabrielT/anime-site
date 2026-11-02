@@ -35,6 +35,46 @@ function saveEpisodes(episodes) {
 
 let latestEpisodesDB = getStoredEpisodes();
 
+// Rotina automática para atualizar os lançamentos e episódios periodicamente (Ex: a cada 2 horas)
+const INTERVALO_ATUALIZACAO_HORAS = 2;
+setInterval(async () => {
+  console.log("⏳ [Auto-Scraper] Iniciando varredura periódica por novos lançamentos...");
+  try {
+    const releases = await getLatestReleasesFromHome();
+    if (releases && releases.length > 0) {
+      latestEpisodesDB = getStoredEpisodes();
+      
+      let atualizou = false;
+      for (const rel of releases) {
+        // Verifica se o episódio já existe no banco pelo link
+        const existe = latestEpisodesDB.some(ep => ep.episode_url === rel.url);
+        if (!existe) {
+          latestEpisodesDB.unshift({
+            id: latestEpisodesDB.length > 0 ? latestEpisodesDB[0].id + 1 : 1,
+            title: rel.title,
+            episode_url: rel.url,
+            number: rel.number || 1,
+            season: 1,
+            lang: "Legendado",
+            servers: [],
+            created_at: new Date()
+          });
+          atualizou = true;
+        }
+      }
+
+      if (atualizou) {
+        saveEpisodes(latestEpisodesDB);
+        console.log("✅ [Auto-Scraper] Novos episódios encontrados e salvos com sucesso!");
+      } else {
+        console.log("ℹ️ [Auto-Scraper] Nenhum episódio novo encontrado nesta varredura.");
+      }
+    }
+  } catch (err) {
+    console.error("❌ [Auto-Scraper] Erro ao executar a atualização automática:", err.message);
+  }
+}, INTERVALO_ATUALIZACAO_HORAS * 60 * 60 * 1000);
+
 app.get("/", (req, res) => {
   res.json({ status: "Backend rodando 🚀" });
 });
@@ -56,14 +96,21 @@ app.get("/api/episodes", async (req, res) => {
     return res.json({ data: latestEpisodesDB });
   }
 
-  const termo = String(animeQuery).toLowerCase().replace(/[:\-_]/g, " ").trim();
-  const palavrasChave = termo.split(/\s+/).filter(p => p.length >= 3);
+  // Limpeza e normalização mais robusta do texto enviado pela query
+  const termoLimpo = decodeURIComponent(animeQuery)
+    .toLowerCase()
+    .replace(/[%20|-|_|:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  const filtrados = latestEpisodesDB.filter(ep => {
+  const palavrasChave = termoLimpo.split(" ").filter(p => p.length >= 3);
+
+  // Busca inteligente e flexível no banco local
+  let filtrados = latestEpisodesDB.filter(ep => {
     const titleLower = ep.title.toLowerCase();
-    if (titleLower.includes(termo)) return true;
+    if (titleLower.includes(termoLimpo)) return true;
     if (palavrasChave.length > 0) {
-      return palavrasChave.every(palavra => titleLower.includes(palavra));
+      return palavrasChave.some(palavra => titleLower.includes(palavra));
     }
     return false;
   });
@@ -72,6 +119,7 @@ app.get("/api/episodes", async (req, res) => {
     return res.json({ data: filtrados });
   }
 
+  // Se não achar localmente, tenta buscar através do scraper na web
   try {
     const animeUrl = await searchAnime(animeQuery);
     if (!animeUrl) return res.json({ data: [] });

@@ -4,7 +4,6 @@ const genreSelect = document.getElementById("genre");
 const loadMoreBtn = document.getElementById("loadMore");
 
 let page = 1;
-const limit = 24;
 let isLoading = false;
 
 function renderAnimes(animes, clear = false) {
@@ -16,14 +15,21 @@ function renderAnimes(animes, clear = false) {
     return;
   }
 
-  animes.forEach(anime => {
-    const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "";
+  animes.forEach((anime, index) => {
+    // Compatibilidade para suportar tanto os dados do AniList/Top quanto os do Scraper de Últimos Lançamentos
+    const imageUrl = anime.image || anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "";
     const title = anime.title || "Sem título";
-    const id = anime.mal_id;
+    const episodeUrl = anime.episode_url;
+    const malId = anime.mal_id;
+
+    // Se for item de lançamento do scraper, direciona para o player. Se for catálogo, vai para os detalhes.
+    const linkDestino = episodeUrl 
+      ? `player.html?url=${encodeURIComponent(episodeUrl)}&title=${encodeURIComponent(title)}&index=${index}`
+      : `details.html?id=${malId}`;
 
     grid.innerHTML += `
-      <a href="details.html?id=${id}" class="card">
-        <span class="tag">TOP</span>
+      <a href="${linkDestino}" class="card">
+        <span class="tag">${anime.lang || 'TOP'}</span>
         <img src="${imageUrl}" alt="${title}" loading="lazy">
         <p>${title}</p>
       </a>
@@ -36,11 +42,13 @@ async function carregarAnimes() {
   isLoading = true;
 
   try {
-    const res = await fetch(`http://localhost:3000/top-anime?page=${page}`);
+    // Buscando diretamente da rota correta de últimos lançamentos do seu backend
+    const res = await fetch(`http://localhost:3000/api/latest-releases`);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
 
     const data = await res.json();
-    renderAnimes(data.data?.slice(0, limit), page === 1);
+    // Exibe todos os itens retornados pelo scraper (os 21 lançamentos) sem travar em 12
+    renderAnimes(data.data, page === 1);
   } catch (err) {
     console.error("Erro ao carregar animes:", err);
   } finally {
@@ -71,7 +79,7 @@ if (searchInput) {
       }
 
       try {
-        const res = await fetch(`http://localhost:3000/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`http://localhost:3000/api/episodes?anime=${encodeURIComponent(query)}`);
         const data = await res.json();
         renderAnimes(data.data, true);
       } catch (err) {
@@ -100,12 +108,3 @@ if (genreSelect) {
     }
   });
 }
-
-window.addEventListener("scroll", () => {
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
-    if (!isLoading) {
-      page++;
-      carregarAnimes();
-    }
-  }
-});

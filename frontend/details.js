@@ -23,6 +23,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let titleText = "";
 
+  // Função infalível de tradução otimizada para PT-BR
+  async function traduzirParaPt(texto) {
+    if (!texto || texto === "Sem sinopse disponível.") return texto;
+    try {
+      const textoLimpo = texto.replace(/<[^>]*>?/gm, '').trim();
+      // Utiliza o motor de tradução estável
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(textoLimpo)}&langpair=en|pt-BR`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data && data.responseData && data.responseData.translatedText) {
+        let traduzido = data.responseData.translatedText;
+        // Evita retornar mensagem de erro da API caso ultrapasse limite
+        if (!traduzido.includes("MYMEMORY WARNING")) {
+          return traduzido;
+        }
+      }
+    } catch (e) {
+      console.warn("⚠️ Erro na tradução, mantendo original:", e);
+    }
+    return texto; // Retorna o original se houver qualquer instabilidade
+  }
+
   try {
     console.log(`📡 Buscando metadados do anime ID: ${id}...`);
     const res = await fetch(`http://localhost:3000/anime/${id}`);
@@ -42,7 +64,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (animeEpisodes) animeEpisodes.textContent = anime.episodes || "N/A";
       if (animeYear) animeYear.textContent = anime.year || anime.seasonYear || "N/A";
       if (animeType) animeType.textContent = anime.type || anime.format || "TV";
-      if (animeSynopsis) animeSynopsis.textContent = anime.synopsis || anime.description || "Sem sinopse disponível.";
+
+      const sinopseOriginal = anime.synopsis || anime.description || "Sem sinopse disponível.";
+      if (animeSynopsis) {
+        animeSynopsis.textContent = "Traduzindo sinopse para o português...";
+        const sinopseTraduzida = await traduzirParaPt(sinopseOriginal);
+        animeSynopsis.textContent = sinopseTraduzida;
+      }
     }
 
   } catch (err) {
@@ -50,7 +78,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (animeTitle) animeTitle.textContent = "Carregando...";
   }
 
-  // Inicia busca de episódios no backend (porta 3000)
   carregarEpisodios(titleText || id);
 
   async function carregarEpisodios(nomeOuId) {
@@ -112,7 +139,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (currentEpLabel) currentEpLabel.textContent = `Reproduzindo Episódio ${ep.number}`;
     if (playerContainer) playerContainer.innerHTML = '<div style="color:#ff6b00;">Carregando vídeo...</div>';
 
-    // Se o episódio já tiver o iframe salvo, renderiza direto sem requisição extra
     if (ep.iframe) {
       playerContainer.innerHTML = ep.iframe;
       return;

@@ -47,12 +47,14 @@
       background: #1e1e26;
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #fff;
-      padding: 7px 16px;
+      padding: 8px 18px;
       border-radius: 6px;
       font-size: 0.85rem;
       font-weight: 600;
       text-decoration: none;
       transition: all 0.2s;
+      text-align: center;
+      min-width: 150px;
     }
 
     .nav-ep-btn:hover {
@@ -68,7 +70,8 @@
     .controls-panel { background: #141419; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
     .server-selector { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .server-selector span { font-size: 0.85rem; color: #888; font-weight: 600; }
-    .server-btn { background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.08); color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .server-btn { background: #1e1e26; border: 1px solid rgba(255, 255, 255, 0.08); color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .server-btn:hover { background: #2a2a35; }
     .server-btn.active { background: #ff6b00; border-color: #ff6b00; }
   </style>
 </head>
@@ -158,7 +161,7 @@
         allEpsBtn.textContent = "Voltar ao Início";
       }
 
-      // Configuração inteligente dos botões de Próximo e Anterior
+      // Configuração e validação dos botões de Próximo e Anterior
       try {
         const res = await fetch(`http://localhost:3000/api/episodes?anime=${encodeURIComponent(termoBusca)}`);
         const json = await res.json();
@@ -172,20 +175,17 @@
         }
 
         if (indexAtual !== -1 && eps.length > 0) {
-          // Ativa botão anterior se não for o primeiro
           if (indexAtual > 0) {
             const epPrev = eps[indexAtual - 1];
             prevEpBtn.href = `player.html?url=${encodeURIComponent(epPrev.episode_url)}&title=${encodeURIComponent(epPrev.title)}&anime_id=${animeId || ''}&anime_name=${encodeURIComponent(termoBusca)}&index=${indexAtual - 1}`;
             prevEpBtn.classList.remove("disabled");
           }
 
-          // Ativa botão próximo SOMENTE se houver um episódio seguinte na lista
           if (indexAtual < eps.length - 1) {
             const epNext = eps[indexAtual + 1];
             nextEpBtn.href = `player.html?url=${encodeURIComponent(epNext.episode_url)}&title=${encodeURIComponent(epNext.title)}&anime_id=${animeId || ''}&anime_name=${encodeURIComponent(termoBusca)}&index=${indexAtual + 1}`;
             nextEpBtn.classList.remove("disabled");
           } else {
-            // Se for o último episódio lançado da semana, garante que o botão próximo fica desativado
             nextEpBtn.classList.add("disabled");
           }
         }

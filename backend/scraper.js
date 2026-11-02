@@ -20,8 +20,9 @@ function stringSimilarity(s1, s2) {
 }
 
 function cleanQuery(query) {
+  // Mantém os termos úteis e evita apagar palavras essenciais de subtítulos
   return query
-    .replace(/\b(season|\bpart\b|\btv\b|shippuden|dublado|legendado|\d+ª\s*temporada|\d+(nd|rd|th|st)\s*season)\b/gi, "")
+    .replace(/\b(season|\bpart\b|\btv\b|shippuden|dublado|legendado|\d+ª\s*temporada)\b/gi, "")
     .replace(/[:\-_!?,./()[\]"']/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -35,16 +36,18 @@ export async function getLatestReleasesFromHome() {
     const html = await res.text();
     const $ = cheerio.load(html);
     const releases = [];
+    const urlsVistas = new Set();
 
-    $(".items article, article.item, .animation-2 article").each((_, el) => {
+    $(".items article, article.item, .animation-2 article, .result-item, li.item").each((_, el) => {
       const linkEl = $(el).find("a").first();
       let href = linkEl.attr("href") || "";
       const imgEl = $(el).find("img").first();
       let img = imgEl.attr("data-src") || imgEl.attr("src") || "";
-      const title = $(el).find(".entry-title, .title, h3, h2").text().trim() || linkEl.attr("title") || "";
+      const title = $(el).find(".title, .entry-title, h3, h2").text().trim() || linkEl.attr("title") || "";
       const lang = $(el).find(".calidad, .badge, .lang").text().trim() || "Legendado";
 
-      if (href && href.includes("/episodio/")) {
+      if (href && href.includes("/episodio/") && !urlsVistas.has(href)) {
+        urlsVistas.add(href);
         if (!href.startsWith("http")) href = BASE_URL + href;
         if (img.startsWith("//")) img = "https:" + img;
 
@@ -57,7 +60,7 @@ export async function getLatestReleasesFromHome() {
       }
     });
 
-    return releases;
+    return releases.slice(0, 12);
   } catch (err) {
     return [];
   }
@@ -65,34 +68,52 @@ export async function getLatestReleasesFromHome() {
 
 export async function searchAnime(query) {
   const termoLimpo = cleanQuery(query);
+  const qTrim = query.trim();
+
+  // Múltiplas rotas de busca para garantir flexibilidade máxima na origem
   const rotas = [
+    `${BASE_URL}/?s=${encodeURIComponent(qTrim)}`,
     `${BASE_URL}/?s=${encodeURIComponent(termoLimpo)}`,
-    `${BASE_URL}/?s=${encodeURIComponent(query.trim())}`
+    `${BASE_URL}/anime/?s=${encodeURIComponent(qTrim)}`
   ];
 
+  if (qTrim.length === 1) {
+    rotas.unshift(`${BASE_URL}/anime/?letra=${qTrim.toLowerCase()}`);
+  }
+
   for (const url of rotas) {
-    try {
-      const res = await fetch(url, { headers: HEADERS });
-      if (!res.ok) continue;
+    if (!url.includes("?s=%20") && url.length > BASE_URL.length + 3) {
+      try {
+        const res = await fetch(url, { headers: HEADERS });
+        if (!res.ok) continue;
 
-      const html = await res.text();
-      const $ = cheerio.load(html);
-      const items = $("article.item, .items article, .result-item").toArray();
+        const html = await res.text();
+        const $ = cheerio.load(html);
+        const items = $("article.item, .items article, .result-item, .search-page .item").toArray();
 
-      for (const el of items) {
-        const link = $(el).find("a").first();
-        let href = link.attr("href") || "";
-        const titleFound = $(el).find(".title, .entry-title, h3").text().trim();
+        for (const el of items) {
+          const link = $(el).find("a").first();
+          let href = link.attr("href") || "";
+          const titleFound = $(el).find(".title, .entry-title, h3").text().trim();
 
-        if (href && (href.includes("/anime/") || href.includes("/animes/")) && !href.includes("/episodio/")) {
-          const score = stringSimilarity(query, titleFound);
-          if (score >= 0.45 || titleFound.toLowerCase().includes(termoLimpo.toLowerCase())) {
-            if (!href.startsWith("http")) href = BASE_URL + href;
-            return href;
+          const isAnimePage = href && (href.includes("/anime/") || href.includes("/animes/")) && !href.includes("/episodio/");
+
+          if (isAnimePage) {
+            if (qTrim.length === 1) {
+              if (!href.startsWith("http")) href = BASE_URL + href;
+              return href;
+            }
+
+            const score = stringSimilarity(qTrim, titleFound);
+            // Critério flexível para aceitar variações de subtítulos como "Beerus"
+            if (score >= 0.2 || titleFound.toLowerCase().includes(termoLimpo.toLowerCase()) || termoLimpo.toLowerCase().includes(titleFound.toLowerCase())) {
+              if (!href.startsWith("http")) href = BASE_URL + href;
+              return href;
+            }
           }
         }
-      }
-    } catch (err) {}
+      } catch (err) {}
+    }
   }
   return null;
 }
@@ -104,62 +125,69 @@ export async function getEpisodesFromUrl(animeUrl) {
 
     const html = await res.text();
     const $ = cheerio.load(html);
-    const episodes = [];
-    const urlsVistas = new Set();
+    const episodiosMap = new Map();
 
-    const seasonBlocks = $("#seasons .se-c, .seasonbody").toArray();
+    const urlParts = animeUrl.split("/").filter(Boolean);
+    const animeSlug = urlParts[urlParts.length - 1] || "";
+
+    const seasonBlocks = $("#seasons .se-c, .seasons-items .se-c, .episodiosList").toArray();
 
     if (seasonBlocks.length > 0) {
       seasonBlocks.forEach((block, index) => {
-        let seasonNum = index + 1;
-        const seasonTitle = $(block).find(".se-q, .title").text().trim();
+        const seasonTitle = $(block).find(".se-q, .title, span").text().trim();
         const seasonMatch = seasonTitle.match(/(\d+)/);
-        if (seasonMatch) seasonNum = parseInt(seasonMatch[1], 10);
+        const seasonNum = seasonMatch ? parseInt(seasonMatch[1], 10) : (index + 1);
 
-        $(block).find("li a, a").each((_, a) => {
+        $(block).find("a[href*='/episodio/']").each((_, a) => {
           let href = $(a).attr("href");
-          if (!href || !href.includes("/episodio/") || urlsVistas.has(href)) return;
-          urlsVistas.add(href);
-
+          if (!href) return;
           if (!href.startsWith("http")) href = BASE_URL + href;
 
-          const texto = $(a).text().trim();
-          const numMatch = texto.match(/(\d+)/) || href.match(/episodio-(\d+)/i);
-          const epNum = numMatch ? parseInt(numMatch[1], 10) : (episodes.length + 1);
+          const matchEpUrl = href.match(/episodio[^\d]*(\d+)/i) || href.match(/\/(\d+)\/?$/);
+          const epNum = matchEpUrl ? parseInt(matchEpUrl[1], 10) : null;
+          if (!epNum) return;
 
-          episodes.push({
+          const chaveUnica = `s${seasonNum}e${epNum}`;
+
+          if (!episodiosMap.has(chaveUnica)) {
+            episodiosMap.set(chaveUnica, {
+              season: seasonNum,
+              number: epNum,
+              title: `Episódio ${epNum}`,
+              url: href
+            });
+          }
+        });
+      });
+    }
+
+    if (episodiosMap.size === 0) {
+      $("a[href*='/episodio/']").each((_, a) => {
+        let href = $(a).attr("href");
+        if (!href) return;
+        if (!href.startsWith("http")) href = BASE_URL + href;
+
+        const matchEpUrl = href.match(/episodio[^\d]*(\d+)/i) || href.match(/\/(\d+)\/?$/);
+        const epNum = matchEpUrl ? parseInt(matchEpUrl[1], 10) : null;
+        if (!epNum) return;
+
+        const tempMatch = href.match(/temporada[^\d]*(\d+)/i) || href.match(/season[^\d]*(\d+)/i);
+        const seasonNum = tempMatch ? parseInt(tempMatch[1], 10) : 1;
+
+        const chaveUnica = `s${seasonNum}e${epNum}`;
+
+        if (!episodiosMap.has(chaveUnica)) {
+          episodiosMap.set(chaveUnica, {
             season: seasonNum,
             number: epNum,
             title: `Episódio ${epNum}`,
             url: href
           });
-        });
+        }
       });
     }
 
-    if (episodes.length === 0) {
-      $("a[href*='/episodio/']").each((idx, a) => {
-        let href = $(a).attr("href");
-        if (!href || urlsVistas.has(href)) return;
-        urlsVistas.add(href);
-
-        if (!href.startsWith("http")) href = BASE_URL + href;
-
-        const texto = $(a).text().trim();
-        const numMatch = texto.match(/(\d+)/) || href.match(/episodio-(\d+)/i);
-        const epNum = numMatch ? parseInt(numMatch[1], 10) : (idx + 1);
-
-        const tempMatch = href.match(/temporada-(\d+)/i) || href.match(/season-(\d+)/i);
-        const seasonNum = tempMatch ? parseInt(tempMatch[1], 10) : 1;
-
-        episodes.push({
-          season: seasonNum,
-          number: epNum,
-          title: `Episódio ${epNum}`,
-          url: href
-        });
-      });
-    }
+    let episodes = Array.from(episodiosMap.values());
 
     episodes.sort((a, b) => {
       if (a.season !== b.season) return a.season - b.season;
